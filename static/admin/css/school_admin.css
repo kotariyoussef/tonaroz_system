@@ -1,0 +1,590 @@
+/* =====================================================
+   School ERP – Custom Admin Styles (layers on Unfold)
+   ===================================================== */
+
+/* ---------- Google Fonts ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ---------- CSS Custom Properties ---------- */
+:root {
+  --school-primary:        #4f46e5;   /* indigo-600 */
+  --school-primary-light:  #6366f1;   /* indigo-500 */
+  --school-primary-dark:   #3730a3;   /* indigo-800 */
+  --school-accent:         #06b6d4;   /* cyan-500   */
+  --school-success:        #10b981;   /* emerald-500 */
+  --school-warning:        #f59e0b;   /* amber-500  */
+  --school-danger:         #ef4444;   /* red-500    */
+  --school-sidebar-w:      260px;
+  --school-radius:         10px;
+  --school-shadow:         0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+  --school-shadow-md:      0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+}
+
+/* ---------- Global font ---------- */
+html, body {
+  font-size: 16px !important;
+}
+body, h1, h2, h3, h4, h5, h6,
+input, select, textarea, button {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =====================================================
+   KPI DASHBOARD CARDS
+   ===================================================== */
+.school-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.school-kpi-card {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border-radius: var(--school-radius);
+  box-shadow: var(--school-shadow);
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  transition: transform .2s ease, box-shadow .2s ease;
+  border: 1px solid rgba(0,0,0,.05);
+}
+
+.school-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--school-shadow-md);
+}
+
+.school-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--school-primary));
+}
+
+.school-kpi-icon {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  background: var(--kpi-color, var(--school-primary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: #fff;
+  margin-bottom: .25rem;
+  flex-shrink: 0;
+}
+
+.school-kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0f172a;
+  letter-spacing: -.03em;
+}
+
+.school-kpi-label {
+  font-size: .84rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.school-kpi-sub {
+  font-size: .80rem;
+  color: #94a3b8;
+  margin-top: auto;
+}
+
+/* Dark mode KPI */
+.dark .school-kpi-card {
+  background: #1e293b;
+  border-color: rgba(255,255,255,.06);
+}
+.dark .school-kpi-value { color: #f1f5f9; }
+.dark .school-kpi-label { color: #94a3b8; }
+.dark .school-kpi-sub   { color: #64748b; }
+
+/* =====================================================
+   QUICK ACTIONS PANEL
+   ===================================================== */
+.school-quick-actions {
+  background: #fff;
+  border-radius: var(--school-radius);
+  box-shadow: var(--school-shadow);
+  border: 1px solid rgba(0,0,0,.05);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.school-quick-actions h3 {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.school-quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .75rem;
+}
+
+.school-quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 1rem .75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none !important;
+  color: #334155;
+  font-size: .9rem;
+  font-weight: 500;
+  text-align: center;
+  transition: all .18s ease;
+  cursor: pointer;
+}
+
+.school-quick-link:hover {
+  background: var(--school-primary);
+  border-color: var(--school-primary);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79,70,229,.3);
+}
+
+.school-quick-link .material-symbols-outlined {
+  font-size: 24px;
+  transition: color .18s ease;
+}
+
+.dark .school-quick-actions {
+  background: #1e293b;
+  border-color: rgba(255,255,255,.06);
+}
+.dark .school-quick-link {
+  background: #0f172a;
+  border-color: rgba(255,255,255,.08);
+  color: #cbd5e1;
+}
+.dark .school-quick-link:hover {
+  background: var(--school-primary);
+  border-color: var(--school-primary);
+  color: #fff;
+}
+.dark .school-quick-actions h3 { color: #64748b; }
+
+/* =====================================================
+   SECTION HEADING
+   ===================================================== */
+.school-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.school-section-head h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+.dark .school-section-head h2 { color: #f1f5f9; }
+
+/* =====================================================
+   STATUS BADGES (override admin inline styles)
+   ===================================================== */
+.school-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  padding: .2em .65em;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.school-badge-green  { background: #dcfce7; color: #15803d; }
+.school-badge-red    { background: #fee2e2; color: #b91c1c; }
+.school-badge-orange { background: #ffedd5; color: #c2410c; }
+.school-badge-gray   { background: #f1f5f9; color: #475569; }
+.school-badge-blue   { background: #dbeafe; color: #1d4ed8; }
+
+.dark .school-badge-green  { background: rgba(16,185,129,.15); color: #34d399; }
+.dark .school-badge-red    { background: rgba(239,68,68,.15);  color: #f87171; }
+.dark .school-badge-orange { background: rgba(245,158,11,.15); color: #fbbf24; }
+.dark .school-badge-gray   { background: rgba(100,116,139,.15); color: #94a3b8; }
+.dark .school-badge-blue   { background: rgba(59,130,246,.15); color: #60a5fa; }
+
+/* =====================================================
+   ENHANCED TABLE STYLES (on top of Unfold)
+   ===================================================== */
+#result_list {
+  border-radius: var(--school-radius) !important;
+  overflow: hidden !important;
+  box-shadow: var(--school-shadow) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.dark #result_list {
+  border-color: rgba(255,255,255,.07) !important;
+}
+
+#result_list thead th {
+  background: #f8fafc !important;
+  font-size: .82rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  color: #64748b !important;
+  padding: .85rem 1rem !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  white-space: nowrap;
+}
+
+.dark #result_list thead th {
+  background: #0f172a !important;
+  color: #64748b !important;
+  border-bottom-color: rgba(255,255,255,.07) !important;
+}
+
+#result_list tbody tr {
+  transition: background .12s ease !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.dark #result_list tbody tr {
+  border-bottom-color: rgba(255,255,255,.04) !important;
+}
+
+#result_list tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+#result_list tbody tr:hover {
+  background: #f0f9ff !important;
+}
+
+.dark #result_list tbody tr:hover {
+  background: rgba(99,102,241,.07) !important;
+}
+
+#result_list tbody td {
+  padding: .85rem 1rem !important;
+  font-size: .95rem !important;
+  vertical-align: middle !important;
+}
+
+/* Zebra rows */
+#result_list tbody tr:nth-child(even) {
+  background: #fafafa !important;
+}
+.dark #result_list tbody tr:nth-child(even) {
+  background: rgba(255,255,255,.015) !important;
+}
+#result_list tbody tr:nth-child(even):hover {
+  background: #f0f9ff !important;
+}
+.dark #result_list tbody tr:nth-child(even):hover {
+  background: rgba(99,102,241,.07) !important;
+}
+
+/* =====================================================
+   CHANGE FORM ENHANCEMENTS
+   ===================================================== */
+.school-form-card {
+  background: #fff;
+  border-radius: var(--school-radius);
+  box-shadow: var(--school-shadow);
+  border: 1px solid rgba(0,0,0,.05);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.school-form-card-header {
+  background: linear-gradient(135deg, var(--school-primary) 0%, var(--school-primary-light) 100%);
+  color: #fff;
+  padding: 1rem 1.5rem;
+  font-size: .875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.school-form-card-body {
+  padding: 1.5rem;
+}
+
+.dark .school-form-card {
+  background: #1e293b;
+  border-color: rgba(255,255,255,.06);
+}
+
+/* Better fieldset headings inside Unfold */
+fieldset h2,
+.module h2,
+fieldset > h2 {
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+  color: var(--school-primary) !important;
+  padding: .9rem 1.25rem !important;
+  margin: 0 !important;
+  background: rgba(79,70,229,.04) !important;
+  border-left: 3px solid var(--school-primary) !important;
+  border-bottom: 1px solid rgba(79,70,229,.12) !important;
+}
+
+.dark fieldset h2,
+.dark .module h2 {
+  background: rgba(99,102,241,.08) !important;
+  color: #818cf8 !important;
+  border-left-color: #6366f1 !important;
+  border-bottom-color: rgba(99,102,241,.2) !important;
+}
+
+/* =====================================================
+   TOPBAR SCHOOL BRANDING ENHANCEMENT
+   ===================================================== */
+.school-topbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  background: linear-gradient(135deg, var(--school-primary) 0%, var(--school-accent) 100%);
+  color: #fff;
+  padding: .3rem .85rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  box-shadow: 0 2px 8px rgba(79,70,229,.35);
+  white-space: nowrap;
+}
+
+/* =====================================================
+   SUBMIT BUTTONS
+   ===================================================== */
+.submit-row input[type="submit"],
+.submit-row a.closelink,
+.submit-row a.deletelink {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: .95rem !important;
+  transition: all .18s ease !important;
+}
+
+/* =====================================================
+   INLINE ADMIN TABLE POLISH
+   ===================================================== */
+.inline-group .tabular .inline-related td,
+.inline-group .tabular .inline-related th {
+  padding: .7rem .75rem !important;
+  font-size: .92rem !important;
+}
+
+.inline-group h2 {
+  background: linear-gradient(90deg, var(--school-primary) 0%, var(--school-primary-light) 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: .85rem 1.25rem !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+/* =====================================================
+   SIDEBAR NAVIGATION ACCENT
+   ===================================================== */
+#nav-sidebar a.active,
+#nav-sidebar a[aria-current],
+#nav-sidebar-inner a.active {
+  background: rgba(79,70,229,.1) !important;
+  color: var(--school-primary) !important;
+  border-left: 3px solid var(--school-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* =====================================================
+   PAGINATION
+   ===================================================== */
+.paginator a {
+  border-radius: 6px !important;
+  transition: background .12s ease !important;
+}
+.paginator .this-page {
+  background: var(--school-primary) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+}
+
+/* =====================================================
+   SEARCH BAR ENHANCEMENT
+   ===================================================== */
+#searchbar {
+  border-radius: 8px !important;
+  transition: box-shadow .2s ease !important;
+}
+#searchbar:focus {
+  box-shadow: 0 0 0 3px rgba(79,70,229,.2) !important;
+  border-color: var(--school-primary) !important;
+}
+
+/* =====================================================
+   APP INDEX CARDS (model list on index)
+   ===================================================== */
+.school-app-card {
+  background: #fff;
+  border-radius: var(--school-radius);
+  box-shadow: var(--school-shadow);
+  border: 1px solid rgba(0,0,0,.05);
+  overflow: hidden;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.school-app-card:hover {
+  box-shadow: var(--school-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* =====================================================
+   RECENT ACTIVITY SECTION
+   ===================================================== */
+.school-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.school-activity-item:last-child { border-bottom: none; }
+
+.school-activity-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--school-primary);
+  margin-top: .4rem;
+  flex-shrink: 0;
+}
+
+.dark .school-activity-item { border-bottom-color: rgba(255,255,255,.04); }
+
+/* =====================================================
+   RESPONSIVE ADJUSTMENTS
+   ===================================================== */
+@media (max-width: 768px) {
+  .school-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .school-quick-links {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .school-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .school-kpi-value { font-size: 1.5rem; }
+}
+
+/* =====================================================
+   SMOOTH TRANSITIONS FOR DARK MODE
+   ===================================================== */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: .15s;
+  transition-timing-function: ease;
+}
+/* But not for animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+
+/* =====================================================
+   MESSAGES / ALERTS POLISH
+   ===================================================== */
+.messagelist li {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: .95rem !important;
+  animation: slideIn .3s ease forwards;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================
+   BREADCRUMB
+   ===================================================== */
+div.breadcrumbs {
+  font-size: .9rem !important;
+  font-weight: 500 !important;
+}
+
+/* =====================================================
+   FILTER SIDEBAR POLISH
+   ===================================================== */
+#changelist-filter h2 {
+  font-size: .82rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+}
+
+#changelist-filter h3 {
+  font-size: .85rem !important;
+  font-weight: 600 !important;
+  color: var(--school-primary) !important;
+}
+
+/* =====================================================
+   OBJECT TOOLS (top-right add button area)
+   ===================================================== */
+.object-tools a {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: .9rem !important;
+  transition: all .18s ease !important;
+}
+
+/* =====================================================
+   CALENDAR & DATE HIERARCHY
+   ===================================================== */
+.xfull .date-hierarchy {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.school-kpi-card {
+  animation: fadeUp .4s ease forwards;
+}
+
+.school-kpi-card:nth-child(1) { animation-delay: .0s; }
+.school-kpi-card:nth-child(2) { animation-delay: .05s; }
+.school-kpi-card:nth-child(3) { animation-delay: .10s; }
+.school-kpi-card:nth-child(4) { animation-delay: .15s; }
+.school-kpi-card:nth-child(5) { animation-delay: .20s; }
+.school-kpi-card:nth-child(6) { animation-delay: .25s; }

@@ -1,0 +1,14 @@
+{
+  "name": "whatsapp-service",
+  "version": "1.0.0",
+  "description": "Background service for WhatsApp automation using whatsapp-web.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}
