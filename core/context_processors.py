@@ -33,3 +33,24 @@ def conflicts_count(request):
         cache.set(CACHE_KEY, count, CACHE_TTL)
 
     return {'conflict_count': count}
+
+
+def whatsapp_status(request):
+    """
+    Returns {'whatsapp_connected': True/False} to show status indicator in main sidebar.
+    Cached for 5 seconds to prevent slowing down page loads.
+    """
+    CACHE_KEY = 'sidebar_whatsapp_status'
+    CACHE_TTL = 5  # seconds
+    
+    connected = cache.get(CACHE_KEY)
+    if connected is None:
+        try:
+            from .utils import WhatsAppServiceAPI
+            status_data = WhatsAppServiceAPI.get_status()
+            connected = not status_data.get('offline', True) and status_data.get('status') == 'READY'
+        except Exception:
+            connected = False
+        cache.set(CACHE_KEY, connected, CACHE_TTL)
+        
+    return {'whatsapp_connected': connected}

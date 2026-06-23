@@ -1110,7 +1110,13 @@
 
         <a class="nav-item-link {% active_if 'whatsapp_dashboard' 'whatsapp_payment_reminders' 'whatsapp_absence_notifications' 'whatsapp_bulk_announcements' %}"
           href="{% url 'core:whatsapp_dashboard' %}" title="WhatsApp">
-          <i class="bi bi-whatsapp"></i>
+          <i class="bi bi-whatsapp" style="position: relative;">
+            {% if whatsapp_connected %}
+              <span style="position: absolute; top: -1px; right: -2px; width: 7px; height: 7px; background-color: #25d366; border-radius: 50%; display: inline-block;"></span>
+            {% else %}
+              <span style="position: absolute; top: -1px; right: -2px; width: 7px; height: 7px; background-color: #9ca3af; border-radius: 50%; display: inline-block;"></span>
+            {% endif %}
+          </i>
           <span class="nav-label-text">WhatsApp</span>
         </a>
 

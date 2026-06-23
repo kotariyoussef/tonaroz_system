@@ -1548,7 +1548,7 @@ class WhatsAppMessageTemplates:
     EDUCATION = {
         'class_reminder':
             "Bonjour {student_name},\n"
-            "Petit rappel : votre cours de {subject} est prévu le {date} à {time} dans la salle {room}.",
+            "Petit rappel : votre cours de {subject} est prévu le {date}.",
 
         'assignment_due':
             "Bonjour {student_name},\n"

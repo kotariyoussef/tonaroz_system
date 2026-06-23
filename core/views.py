@@ -1745,8 +1745,7 @@ def whatsapp_session_reminder(request, session_id):
                 {
                     'student_name': contact['student_name'],
                     'subject': contact['course_name'],
-                    'date': f"{contact['date']} à {contact['time']}",
-                    'room': contact['room'],
+                    'date': f"{contact['date']} à {contact['time']}"
                 }
             )
             

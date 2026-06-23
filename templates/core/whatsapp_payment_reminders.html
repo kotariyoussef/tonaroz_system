@@ -258,7 +258,11 @@ $(document).ready(function () {
         $btn.closest('tr').addClass('table-success').css('transition', 'all 0.5s ease');
       },
       error: function (xhr) {
-        $btn.prop('disabled', false).html('<i class="bi bi-exclamation-triangle"></i> Échec');
+        $btn.prop('disabled', false)
+          .removeClass('btn-success btn-secondary')
+          .addClass('btn-danger')
+          .html('<i class="bi bi-arrow-clockwise"></i> Réessayer')
+          .css({ background: '#dc3545', borderColor: '#dc3545' });
         alert("Erreur lors de l'envoi : " + (xhr.responseJSON?.error || xhr.statusText));
       }
     });
@@ -267,7 +271,7 @@ $(document).ready(function () {
   // Bulk Auto-Send
   $('#auto-send-all-btn').on('click', function () {
     const contacts = [];
-    $('.auto-send-btn').each(function () {
+    $('table .auto-send-btn').each(function () {
       const $btn = $(this);
       // Skip if already sent or disabled
       if (!$btn.hasClass('btn-secondary') && !$btn.closest('tr').hasClass('table-success')) {
@@ -345,7 +349,11 @@ $(document).ready(function () {
           setTimeout(sendNext, 1500); // 1.5 seconds delay between sends
         },
         error: function (xhr) {
-          $itemBtn.prop('disabled', false).html('<i class="bi bi-exclamation-triangle"></i> Échec');
+          $itemBtn.prop('disabled', false)
+            .removeClass('btn-success btn-secondary')
+            .addClass('btn-danger')
+            .html('<i class="bi bi-arrow-clockwise"></i> Réessayer')
+            .css({ background: '#dc3545', borderColor: '#dc3545' });
           console.error("Error sending to " + item.phone, xhr);
           
           index++; // Skip error and proceed
