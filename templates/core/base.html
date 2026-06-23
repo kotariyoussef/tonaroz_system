@@ -141,7 +141,7 @@
       align-items: center;
       gap: 2px;
       flex: 1;
-      overflow-x: auto;
+      overflow: visible;
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
@@ -160,6 +160,7 @@
       white-space: nowrap;
       transition: background 0.15s, color 0.15s;
       position: relative;
+      cursor: pointer;
     }
 
     .nav-item-link i {
@@ -1125,7 +1126,9 @@
         <!-- Administration Dropdown -->
         <div class="nav-dropdown">
           <a class="nav-item-link {% active_if 'courses_list' 'levels_list' 'schedule_conflicts' 'teacher_payroll' 'whatsapp_payment_reminders' 'whatsapp_absence_notifications' %}" href="#" title="Administration">
-            
+            <i class="bi bi-gear-fill"></i>
+            <span class="nav-label-text">Administration</span>
+            <i class="bi bi-chevron-down" style="font-size: 0.9em;"></i>
           </a>
           <div class="nav-dropdown-menu" style="min-width: 220px;">
             <a class="nav-dropdown-item {% active_if 'courses_list' %}" href="{% url 'core:courses_list' %}">
@@ -1364,6 +1367,7 @@
       // ── Administration dropdown (click-toggle) ─────────────────────
       $(document).on('click', '.nav-dropdown > .nav-item-link', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         const $menu = $(this).siblings('.nav-dropdown-menu');
         const isOpen = $menu.hasClass('open');
         // Close all other open dropdowns first
@@ -1371,6 +1375,11 @@
         if (!isOpen) {
           $menu.addClass('open');
         }
+      });
+
+      // Keep clicks inside the dropdown from closing it immediately
+      $(document).on('click', '.nav-dropdown, .nav-dropdown-menu', function (e) {
+        e.stopPropagation();
       });
 
       // Close dropdown when clicking outside
