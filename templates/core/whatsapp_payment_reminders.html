@@ -3,7 +3,9 @@
 
 {% block breadcrumb %}
   <span class="context-bar-sep">›</span>
-  <span class="context-bar-current"><i class="bi bi-whatsapp"></i> Rappels paiement</span>
+  <a href="{% url 'core:whatsapp_dashboard' %}" class="context-bar-link"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+  <span class="context-bar-sep">›</span>
+  <span class="context-bar-current">Rappels paiement</span>
 {% endblock %}
 
 {% block content %}
@@ -20,6 +22,18 @@
         <span class="badge bg-secondary ms-2"><i class="bi bi-exclamation-triangle"></i> Mode Manuel</span>
       {% endif %}
     </p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <form method="GET" class="d-flex align-items-center gap-2">
+      <label for="month-select" class="fw-600 text-muted small text-nowrap">Mois :</label>
+      <select name="month" id="month-select" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+        {% for m in months_choices %}
+          <option value="{{ m|date:'Y-m' }}" {% if m|date:'Y-m' == current_month|date:'Y-m' %}selected{% endif %}>
+            {{ m|date:"F Y" }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
   </div>
 </div>
 
@@ -238,7 +252,7 @@ $(document).ready(function () {
     $.ajax({
       url: "{% url 'core:whatsapp_send_ajax' %}",
       method: "POST",
-      data: { phone: phone, message: message },
+      data: { phone: phone, message: message, message_type: "payment_reminder" },
       success: function (response) {
         $btn.removeClass('btn-success').addClass('btn-secondary').html('<i class="bi bi-check"></i> Envoyé').prop('disabled', true);
         $btn.closest('tr').addClass('table-success').css('transition', 'all 0.5s ease');
@@ -318,7 +332,7 @@ $(document).ready(function () {
       $.ajax({
         url: "{% url 'core:whatsapp_send_ajax' %}",
         method: "POST",
-        data: { phone: item.phone, message: item.message },
+        data: { phone: item.phone, message: item.message, message_type: "payment_reminder" },
         success: function (response) {
           $itemBtn.removeClass('btn-success').addClass('btn-secondary').html('<i class="bi bi-check"></i> Envoyé').prop('disabled', true);
           $itemBtn.closest('tr').addClass('table-success').css('transition', 'all 0.5s ease');

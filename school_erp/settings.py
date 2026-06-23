@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from django.templatetags.static import static
 from django.urls import reverse_lazy
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -263,3 +264,6 @@ SCHOOL_ADDRESS = "Rue Marrakech, Im 16, Ap N 3, 2ème Étage, Khouribga"
 SCHOOL_PHONE = "0707477911 / 0661569522"
 SCHOOL_EMAIL = "contact@centre-tonaroz.com"
 SCHOOL_LOGO_PATH = 'images/tonaroz_logo.svg'
+
+# WhatsApp integration settings
+WHATSAPP_API_KEY = os.environ.get('WA_API_KEY', '')

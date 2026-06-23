@@ -1134,22 +1134,7 @@ Centre Tonaroz
     return True
 
 
-def generate_whatsapp_link(phone: str, receipt_text: str) -> str:
-    """
-    Génère un lien WhatsApp Web avec le reçu pré-rempli
-    """
-    import urllib.parse
-    
-    # Nettoyer le numéro (enlever espaces, tirets)
-    clean_phone = phone.replace(' ', '').replace('-', '').replace('+', '')
-    
-    # Encoder le message
-    encoded_text = urllib.parse.quote(receipt_text)
-    
-    # Générer le lien
-    whatsapp_link = f"https://wa.me/{clean_phone}?text={encoded_text}"
-    
-    return whatsapp_link
+# generate_whatsapp_link() removed — use WhatsAppUtils.generate_chat_link() instead
 
 
 # ==================== VALIDATION ====================
@@ -1353,24 +1338,39 @@ class WhatsAppUtils:
     @staticmethod
     def clean_phone_number(phone: str) -> str:
         """
-        Clean and format phone number for WhatsApp.
-        
+        Clean and format phone number for WhatsApp (international format).
+
+        Handles Moroccan local numbers (06x, 07x, 05x) and international
+        format (+212 or 00212) transparently.
+
         Args:
             phone: Phone number in any format
-            
+
         Returns:
-            Cleaned phone number with only digits
-            
+            Phone number as digits-only international string (no leading +)
+
         Example:
+            >>> WhatsAppUtils.clean_phone_number("0612345678")
+            '212612345678'
             >>> WhatsAppUtils.clean_phone_number("+212 6 12 34 56 78")
             '212612345678'
         """
         # Remove all non-digit characters
         cleaned = re.sub(r'\D', '', phone)
-        
-        # Remove leading zeros
-        cleaned = cleaned.lstrip('0')
-        
+
+        # Morocco: local numbers starting with 06, 07, 05 (10 digits)
+        if cleaned.startswith(('06', '07', '05')) and len(cleaned) == 10:
+            cleaned = '212' + cleaned[1:]  # drop leading 0, prepend 212
+        # Morocco: local without leading 0 — 6x, 7x, 5x (9 digits)
+        elif cleaned.startswith(('6', '7', '5')) and len(cleaned) == 9:
+            cleaned = '212' + cleaned
+        # Morocco: 00212 prefix — normalise to 212
+        elif cleaned.startswith('00212'):
+            cleaned = cleaned[2:]  # strip leading 00
+        # Strip any other leading zeros (generic fallback)
+        else:
+            cleaned = cleaned.lstrip('0') or cleaned
+
         return cleaned
     
     @staticmethod
@@ -1541,26 +1541,7 @@ class WhatsAppMessageTemplates:
     }
 
 
-    # Templates Marketing
-    MARKETING = {
-        'promotion':
-            "🎉 Offre spéciale pour vous, {name} !\n"
-            "Profitez de {discount}% de réduction sur {product}.\n"
-            "Utilisez le code : {promo_code}\n"
-            "Offre valable jusqu'au {expiry_date}.",
-
-        'new_product':
-            "Bonjour {name} 🚀\n"
-            "Découvrez notre nouveau produit : {product_name}.\n"
-            "Nous sommes convaincus qu'il vous plaira !\n"
-            "{product_url}",
-
-        'abandoned_cart':
-            "Bonjour {name},\n"
-            "Vous avez laissé {items_count} article(s) dans votre panier 🛒.\n"
-            "Finalisez votre achat maintenant et bénéficiez de {discount}% de réduction !\n"
-            "{cart_url}",
-    }
+    # NOTE: MARKETING templates removed — not applicable to a school ERP
 
 
     # Templates Éducation
@@ -1581,23 +1562,7 @@ class WhatsAppMessageTemplates:
     }
 
 
-    # Templates Santé
-    HEALTHCARE = {
-        'appointment_confirmation':
-            "Bonjour {patient_name},\n"
-            "Votre rendez-vous avec le Dr {doctor_name} est confirmé pour le {date} à {time}.\n"
-            "Adresse : {clinic_address}",
-
-        'prescription_ready':
-            "Bonjour {patient_name},\n"
-            "Votre ordonnance est prête et peut être récupérée à {pharmacy_name}.\n"
-            "Merci de vous munir d'une pièce d'identité.",
-
-        'test_results':
-            "Bonjour {patient_name},\n"
-            "Les résultats de vos analyses sont disponibles.\n"
-            "Veuillez nous contacter au {phone} afin de planifier une consultation avec le Dr {doctor_name}.",
-    }
+    # NOTE: HEALTHCARE templates removed — not applicable to a school ERP
     
     @classmethod
     def get_template(cls, category: str, template_name: str) -> str:
@@ -1615,68 +1580,8 @@ class WhatsAppMessageTemplates:
         return category_templates.get(template_name, "")
 
 
-# Django Integration Example
-class DjangoWhatsAppMixin:
-    """
-    Mixin for Django models to add WhatsApp functionality.
-    Add this to your Django model to enable WhatsApp links.
-    """
-    
-    def get_whatsapp_link(self, message: Optional[str] = None) -> str:
-        """
-        Generate WhatsApp link for this model instance.
-        Assumes model has a 'phone' field.
-        """
-        if not hasattr(self, 'phone'):
-            raise AttributeError("Model must have a 'phone' field")
-        
-        return WhatsAppUtils.generate_chat_link(self.phone, message)
-    
-    def send_whatsapp_message(self, template_name: str, **kwargs):
-        """
-        Generate a WhatsApp link with a template message.
-        """
-        # Get model fields for template variables
-        context = {
-            field.name: getattr(self, field.name)
-            for field in self._meta.fields
-        }
-        context.update(kwargs)
-        
-        # Create message from template
-        message = template_name.format(**context)
-        
-        return self.get_whatsapp_link(message)
-
-
-# Django View Helper Functions
-def generate_whatsapp_button_html(
-    phone: str,
-    message: Optional[str] = None,
-    button_text: str = "Chat on WhatsApp",
-    css_class: str = "btn btn-success"
-) -> str:
-    """
-    Generate HTML for a WhatsApp button.
-    
-    Args:
-        phone: Phone number
-        message: Pre-filled message
-        button_text: Button label
-        css_class: CSS classes for button
-        
-    Returns:
-        HTML string for button
-    """
-    link = WhatsAppUtils.generate_chat_link(phone, message)
-    return f'''
-    <a href="{link}" 
-       target="_blank" 
-       rel="noopener noreferrer"
-       class="{css_class}">
-        <i class="bi bi-whatsapp"></i> {button_text}
-    </a>
-    '''
+# DjangoWhatsAppMixin removed — unused dead code
+# generate_whatsapp_button_html removed — unused dead code
 
 
 import urllib.request
@@ -1725,10 +1630,15 @@ class WhatsAppServiceAPI:
         """
         url = f"{cls.BASE_URL}/send"
         payload = json.dumps({'phone': phone, 'message': message}).encode('utf-8')
+        headers = {'Content-Type': 'application/json'}
+        api_key = getattr(settings, 'WHATSAPP_API_KEY', '')
+        if api_key:
+            headers['X-API-Key'] = api_key
+        
         req = urllib.request.Request(
             url, 
             data=payload, 
-            headers={'Content-Type': 'application/json'},
+            headers=headers,
             method='POST'
         )
         try:
@@ -1757,11 +1667,61 @@ class WhatsAppServiceAPI:
         Logs out from the active WhatsApp session.
         """
         url = f"{cls.BASE_URL}/logout"
-        req = urllib.request.Request(url, method='POST')
+        headers = {'Content-Type': 'application/json'}
+        api_key = getattr(settings, 'WHATSAPP_API_KEY', '')
+        if api_key:
+            headers['X-API-Key'] = api_key
+            
+        # Express requires Content-Type for POST body parsing even when body is empty
+        req = urllib.request.Request(
+            url,
+            data=b'{}',
+            headers=headers,
+            method='POST'
+        )
         try:
             with urllib.request.urlopen(req, timeout=5) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 return data
+        except urllib.error.HTTPError as e:
+            try:
+                data = json.loads(e.read().decode('utf-8'))
+                return data
+            except Exception:
+                return {'success': False, 'error': f"HTTP Error {e.code}: {e.reason}"}
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    @classmethod
+    def restart(cls):
+        """
+        Restarts the WhatsApp client in the Node.js service.
+        """
+        url = f"{cls.BASE_URL}/restart"
+        headers = {'Content-Type': 'application/json'}
+        api_key = getattr(settings, 'WHATSAPP_API_KEY', '')
+        if api_key:
+            headers['X-API-Key'] = api_key
+            
+        req = urllib.request.Request(
+            url,
+            data=b'{}',
+            headers=headers,
+            method='POST'
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                return data
+        except urllib.error.HTTPError as e:
+            try:
+                data = json.loads(e.read().decode('utf-8'))
+                return data
+            except Exception:
+                return {'success': False, 'error': f"HTTP Error {e.code}: {e.reason}"}
         except Exception as e:
             return {
                 'success': False,

@@ -8,8 +8,8 @@ from django.db.models import Q, Count, Sum
 from decimal import Decimal
 from datetime import timedelta, date
 
-from .models import Student, Payment, Enrollment, Room, Teacher
-from .utils import WhatsAppMessageTemplates, WhatsAppUtils, _build_room_schedule, _build_teacher_schedule, _calculate_week_stats, get_dashboard_stats, generate_receipt_pdf, calculate_student_monthly_total, generate_sessions_from_coursegroups, _annotate_conflicts
+from .models import Student, Payment, Enrollment, Room, Teacher, WhatsAppSendLog
+from .utils import WhatsAppMessageTemplates, WhatsAppUtils, WhatsAppServiceAPI, _build_room_schedule, _build_teacher_schedule, _calculate_week_stats, get_dashboard_stats, generate_receipt_pdf, calculate_student_monthly_total, generate_sessions_from_coursegroups, _annotate_conflicts
 from .forms import SessionForm, StudentForm, EnrollmentForm
 from django.core.paginator import Paginator
 from .models import CourseGroup, Session, Attendance, SessionException
@@ -1410,9 +1410,25 @@ def enrollment_remove(request, enrollment_id):
 def whatsapp_payment_reminders(request):
     """Generate WhatsApp links for payment reminders to unpaid students"""
     from django.utils import timezone
-    
-    current_month = timezone.now().date().replace(day=1)
-    
+    from dateutil.relativedelta import relativedelta
+
+    # Month selector — allow choosing a past or current month
+    month_param = request.GET.get('month')
+    if month_param:
+        try:
+            current_month = datetime.strptime(month_param, '%Y-%m').date().replace(day=1)
+        except ValueError:
+            current_month = timezone.now().date().replace(day=1)
+    else:
+        current_month = timezone.now().date().replace(day=1)
+
+    # Build months choices (last 6 months + current)
+    today = timezone.now().date()
+    months_choices = []
+    for i in range(-5, 1):
+        m = today + relativedelta(months=i)
+        months_choices.append(m.replace(day=1))
+
     # Get all active students
     students = Student.objects.filter(is_active=True)
     
@@ -1440,14 +1456,16 @@ def whatsapp_payment_reminders(request):
                 'month': current_month.strftime('%B %Y'),
             }
             
-            # Generate personalized message
+            # Generate personalized message using French month name
+            from .utils import month_name_fr
+            month_fr = f"{month_name_fr(current_month.month)} {current_month.year}"
             template = WhatsAppMessageTemplates.CUSTOMER_SERVICE['payment_reminder']
             message = WhatsAppUtils.create_template_message(
                 template,
                 {
                     'name': contact['name'],
                     'amount': f"{contact['amount']} {contact['currency']}",
-                    'invoice_id': f"{student.id}-{current_month.strftime('%Y%m')}"
+                    'invoice_id': month_fr,
                 }
             )
             
@@ -1464,13 +1482,13 @@ def whatsapp_payment_reminders(request):
             
             unpaid_contacts.append(contact)
     
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
     
     context = {
         'unpaid_contacts': unpaid_contacts,
         'total_unpaid': len(unpaid_contacts),
         'current_month': current_month,
+        'months_choices': months_choices,
         'status_data': status_data,
     }
     
@@ -1580,7 +1598,6 @@ def whatsapp_absence_notifications(request):
 
         absence_contacts.append(contact)
 
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
 
     context = {
@@ -1594,7 +1611,7 @@ def whatsapp_absence_notifications(request):
 
 
 
-@require_GET
+@require_http_methods(["GET", "POST"])
 def whatsapp_bulk_announcements(request):
     """Create bulk WhatsApp announcement links for all active students"""
     
@@ -1617,7 +1634,6 @@ def whatsapp_bulk_announcements(request):
     ).exclude(whatsapp_group_link='').select_related('teacher')
     
     # If POST, generate links with custom message
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
 
     # If POST, generate links with custom message
@@ -1683,7 +1699,6 @@ def whatsapp_payment_confirmation(request, payment_id):
         message
     )
     
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
     
     context = {
@@ -1746,7 +1761,6 @@ def whatsapp_session_reminder(request, session_id):
             
             reminder_contacts.append(contact)
     
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
     
     context = {
@@ -1789,15 +1803,17 @@ def whatsapp_generate_link_ajax(request):
 @require_GET
 def whatsapp_dashboard(request):
     """WhatsApp integration dashboard with connection status and session control"""
-    from .utils import WhatsAppServiceAPI
     status_data = WhatsAppServiceAPI.get_status()
     
     # If request is AJAX or has ajax=1 query param, return status data as JSON
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
         return JsonResponse(status_data)
         
+    recent_logs = WhatsAppSendLog.objects.select_related('student').all()[:20]
+    
     context = {
         'status_data': status_data,
+        'recent_logs': recent_logs,
     }
     return render(request, 'core/whatsapp_dashboard.html', context)
 
@@ -1806,15 +1822,35 @@ def whatsapp_dashboard(request):
 def whatsapp_send_ajax(request):
     """
     AJAX endpoint to send a WhatsApp message using the background service.
+    Logs every attempt to WhatsAppSendLog.
     """
     phone = request.POST.get('phone')
     message = request.POST.get('message')
-    
+    message_type = request.POST.get('message_type', 'other')
+
     if not phone or not message:
         return JsonResponse({'success': False, 'error': 'Phone number and message are required.'}, status=400)
-    
-    from .utils import WhatsAppServiceAPI
+
     res = WhatsAppServiceAPI.send_message(phone, message)
+
+    # Resolve student by phone for richer log
+    from .utils import WhatsAppUtils
+    cleaned = WhatsAppUtils.clean_phone_number(phone)
+    student = (
+        Student.objects.filter(parent_contact__icontains=phone).first()
+        or Student.objects.filter(parent_contact__icontains=cleaned).first()
+    )
+
+    # Write log entry
+    WhatsAppSendLog.objects.create(
+        student=student,
+        phone=phone,
+        message_type=message_type,
+        message_preview=message[:300],
+        status='SENT' if res.get('success') else 'FAILED',
+        error_message=res.get('error', '') if not res.get('success') else '',
+    )
+
     if res.get('success'):
         return JsonResponse({'success': True, 'message_id': res.get('messageId')})
     else:
@@ -1826,13 +1862,23 @@ def whatsapp_logout_ajax(request):
     """
     AJAX endpoint to logout the WhatsApp session.
     """
-    from .utils import WhatsAppServiceAPI
     res = WhatsAppServiceAPI.logout()
     if res.get('success'):
         return JsonResponse({'success': True})
     else:
         return JsonResponse({'success': False, 'error': res.get('error', 'Logout failed')}, status=400)
 
+
+@require_POST
+def whatsapp_restart_ajax(request):
+    """
+    AJAX endpoint to restart the WhatsApp client session.
+    """
+    res = WhatsAppServiceAPI.restart()
+    if res.get('success'):
+        return JsonResponse({'success': True, 'message': res.get('message', 'Restart initiated')})
+    else:
+        return JsonResponse({'success': False, 'error': res.get('error', 'Restart failed')}, status=400)
 
 
 # ==============================================================================

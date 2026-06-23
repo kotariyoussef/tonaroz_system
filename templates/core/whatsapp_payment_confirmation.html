@@ -1,6 +1,13 @@
 {% extends 'core/base.html' %}
 {% block title %}Confirmation WhatsApp — Paiement{% endblock %}
 
+{% block breadcrumb %}
+  <span class="context-bar-sep">›</span>
+  <a href="{% url 'core:whatsapp_dashboard' %}"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+  <span class="context-bar-sep">›</span>
+  <span class="context-bar-current">Confirmation de paiement</span>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center" style="margin-top:40px;">
   <div class="col-lg-6">
@@ -112,6 +119,7 @@ $(document).ready(function() {
       data: {
         "phone": "{{ student.parent_contact }}",
         "message": `{{ message|escapejs }}`,
+        "message_type": "payment_confirmation",
         "csrfmiddlewaretoken": "{{ csrf_token }}"
       },
       success: function(response) {

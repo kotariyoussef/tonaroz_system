@@ -273,40 +273,7 @@
       {% endfor %}
     </div>
 
-    <!-- Pagination -->
-    {% if students.has_other_pages %}
-      <nav class="mt-2">
-        <ul class="pagination justify-content-center">
-          {% if students.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ students.previous_page_number }}">
-                <i class="bi bi-chevron-left"></i>
-              </a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
-          {% endif %}
 
-          {% for p in students.paginator.page_range %}
-            {% if p >= students.number|add:'-3' and p <= students.number|add:'3' %}
-              <li class="page-item {% if p == students.number %}active{% endif %}">
-                <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ p }}">{{ p }}</a>
-              </li>
-            {% endif %}
-          {% endfor %}
-
-          {% if students.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ students.next_page_number }}">
-                <i class="bi bi-chevron-right"></i>
-              </a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
-          {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
   </div>
 
   <!-- ── Table view ─────────────────────────────────────────────── -->

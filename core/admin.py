@@ -12,7 +12,7 @@ from import_export.widgets import ForeignKeyWidget
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ExportForm, ImportForm
 
-from .models import Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, SessionException, CourseGroupSchedule, Level
+from .models import Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, SessionException, CourseGroupSchedule, Level, WhatsAppSendLog
 from django.core.exceptions import ValidationError
 
 
@@ -517,3 +517,27 @@ class SessionAdmin(ModelAdmin):
 admin.site.site_header = "🎓 École de Soutien - Gestion"
 admin.site.site_title = "Admin École"
 admin.site.index_title = "Tableau de Bord"
+
+
+# ==================== WHATSAPP SEND LOG ====================
+
+@admin.register(WhatsAppSendLog)
+class WhatsAppSendLogAdmin(ModelAdmin):
+    list_display = ('sent_at', 'get_student_name', 'phone', 'message_type', 'status')
+    list_filter = ('status', 'message_type', 'sent_at')
+    search_fields = ('phone', 'student__name', 'message_preview')
+    readonly_fields = ('student', 'phone', 'message_type', 'message_preview', 'status', 'error_message', 'sent_at')
+    ordering = ('-sent_at',)
+    list_per_page = 50
+
+    def get_student_name(self, obj):
+        if obj.student:
+            return obj.student.name
+        return obj.phone
+    get_student_name.short_description = 'Élève / Téléphone'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

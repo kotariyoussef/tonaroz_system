@@ -781,3 +781,66 @@ def sync_session_exception_on_delete(sender, instance, **kwargs):
     start = instance.date - timedelta(days=1)
     end = instance.date + timedelta(days=1)
     generate_sessions_from_coursegroups(start, end, force=True, course=instance.course_group)
+
+
+# ==============================================================================
+# WHATSAPP SEND LOG
+# ==============================================================================
+
+class WhatsAppSendLog(models.Model):
+    """Log of all WhatsApp messages sent via the automation service."""
+
+    MESSAGE_TYPE_CHOICES = [
+        ('payment_reminder', 'Rappel de paiement'),
+        ('payment_confirmation', 'Confirmation de paiement'),
+        ('absence_notification', 'Notification d\'absence'),
+        ('session_reminder', 'Rappel de séance'),
+        ('bulk_announcement', 'Annonce groupée'),
+        ('other', 'Autre'),
+    ]
+
+    STATUS_CHOICES = [
+        ('SENT', 'Envoyé'),
+        ('FAILED', 'Échec'),
+    ]
+
+    student = models.ForeignKey(
+        'Student',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='whatsapp_logs',
+        verbose_name='Élève',
+    )
+    phone = models.CharField(max_length=30, verbose_name='Téléphone')
+    message_type = models.CharField(
+        max_length=30,
+        choices=MESSAGE_TYPE_CHOICES,
+        default='other',
+        verbose_name='Type de message',
+    )
+    message_preview = models.TextField(
+        max_length=300,
+        blank=True,
+        verbose_name='Aperçu du message',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='SENT',
+        verbose_name='Statut',
+    )
+    error_message = models.TextField(
+        blank=True,
+        verbose_name='Message d\'erreur',
+    )
+    sent_at = models.DateTimeField(auto_now_add=True, verbose_name='Envoyé le')
+
+    class Meta:
+        verbose_name = 'Journal WhatsApp'
+        verbose_name_plural = 'Journal WhatsApp'
+        ordering = ['-sent_at']
+
+    def __str__(self):
+        student_name = self.student.name if self.student else self.phone
+        return f"[{self.get_status_display()}] {self.get_message_type_display()} → {student_name} ({self.sent_at:%d/%m/%Y %H:%M})"

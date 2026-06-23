@@ -6,6 +6,19 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
+// ── Simple API-key security ───────────────────────────────────────────────────
+// Set WA_API_KEY environment variable before starting (e.g. in run_server.py or .env).
+// If not set, the service runs without authentication (local-only, safe for dev).
+const API_KEY = process.env.WA_API_KEY || null;
+
+function requireApiKey(req, res, next) {
+    if (!API_KEY) return next(); // No key configured – allow all
+    const key = req.headers['x-api-key'];
+    if (key === API_KEY) return next();
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.use(express.json());
 
 let qrCodeData = null;
@@ -106,9 +119,9 @@ async function restartClient() {
 // Initial boot
 createClient();
 
-// Endpoints
+// ── Endpoints ─────────────────────────────────────────────────────────────────
 
-// Get status, QR code, and connected info
+// GET /status — Get status, QR code, and connected info (public, no auth needed)
 app.get('/status', (req, res) => {
     res.json({
         status: clientStatus,
@@ -117,8 +130,8 @@ app.get('/status', (req, res) => {
     });
 });
 
-// Send message to phone number
-app.post('/send', async (req, res) => {
+// POST /send — Send message to phone number
+app.post('/send', requireApiKey, async (req, res) => {
     const { phone, message } = req.body;
     if (!phone || !message) {
         return res.status(400).json({ success: false, error: 'Phone and message are required' });
@@ -134,12 +147,15 @@ app.post('/send', async (req, res) => {
     try {
         let cleanedPhone = phone.replace(/\D/g, '');
 
-        if (cleanedPhone.startsWith('06') || cleanedPhone.startsWith('07') || cleanedPhone.startsWith('05')) {
+        // Morocco: local numbers 06x/07x/05x (10 digits) → international
+        if (/^(06|07|05)/.test(cleanedPhone) && cleanedPhone.length === 10) {
             cleanedPhone = '212' + cleanedPhone.substring(1);
-        } else if (cleanedPhone.startsWith('6') || cleanedPhone.startsWith('7') || cleanedPhone.startsWith('5')) {
-            if (cleanedPhone.length === 9) {
-                cleanedPhone = '212' + cleanedPhone;
-            }
+        // Morocco: 9-digit without leading 0 → prepend 212
+        } else if (/^(6|7|5)/.test(cleanedPhone) && cleanedPhone.length === 9) {
+            cleanedPhone = '212' + cleanedPhone;
+        // International 00212 → 212
+        } else if (cleanedPhone.startsWith('00212')) {
+            cleanedPhone = cleanedPhone.substring(2);
         }
 
         const chatId = `${cleanedPhone}@c.us`;
@@ -163,8 +179,8 @@ app.post('/send', async (req, res) => {
     }
 });
 
-// Logout session
-app.post('/logout', async (req, res) => {
+// POST /logout — Logout session
+app.post('/logout', requireApiKey, async (req, res) => {
     try {
         console.log('Logging out from WhatsApp session...');
         await client.logout();
@@ -178,6 +194,19 @@ app.post('/logout', async (req, res) => {
     }
 });
 
+// POST /restart — Restart the WhatsApp client without restarting the server
+app.post('/restart', requireApiKey, async (req, res) => {
+    console.log('Manual restart requested via API...');
+    res.json({ success: true, message: 'Restart initiated' });
+    // Respond first, then restart so the response gets through
+    setTimeout(() => restartClient(), 200);
+});
+
 app.listen(port, () => {
     console.log(`WhatsApp automation service listening at http://localhost:${port}`);
+    if (API_KEY) {
+        console.log('API key authentication is ENABLED.');
+    } else {
+        console.log('API key authentication is DISABLED (set WA_API_KEY env var to enable).');
+    }
 });

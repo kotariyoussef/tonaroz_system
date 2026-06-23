@@ -103,6 +103,9 @@ urlpatterns = [
     path('whatsapp/logout/', 
          views.whatsapp_logout_ajax, 
          name='whatsapp_logout_ajax'),
+    path('whatsapp/restart/',
+         views.whatsapp_restart_ajax,
+         name='whatsapp_restart_ajax'),
     
     # Dashboard admin API
     path('admin-api/kpis/', views.admin_kpis_api, name='admin_kpis_api'),

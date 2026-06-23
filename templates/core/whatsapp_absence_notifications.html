@@ -3,7 +3,9 @@
 
 {% block breadcrumb %}
   <span class="context-bar-sep">›</span>
-  <span class="context-bar-current"><i class="bi bi-whatsapp"></i> Absences WhatsApp</span>
+  <a href="{% url 'core:whatsapp_dashboard' %}" class="context-bar-link"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+  <span class="context-bar-sep">›</span>
+  <span class="context-bar-current">Absences WhatsApp</span>
 {% endblock %}
 
 {% block content %}
@@ -215,7 +217,7 @@ $(document).ready(function() {
     $.ajax({
       url: "{% url 'core:whatsapp_send_ajax' %}",
       method: "POST",
-      data: { phone: phone, message: message },
+      data: { phone: phone, message: message, message_type: "absence_notification" },
       success: function (response) {
         $btn.removeClass('btn-success').addClass('btn-secondary').html('<i class="bi bi-check"></i> Envoyé').prop('disabled', true);
         $btn.closest('tr').addClass('table-success').css('transition', 'all 0.5s ease');
@@ -294,7 +296,7 @@ $(document).ready(function() {
       $.ajax({
         url: "{% url 'core:whatsapp_send_ajax' %}",
         method: "POST",
-        data: { phone: item.phone, message: item.message },
+        data: { phone: item.phone, message: item.message, message_type: "absence_notification" },
         success: function (response) {
           $itemBtn.removeClass('btn-success').addClass('btn-secondary').html('<i class="bi bi-check"></i> Envoyé').prop('disabled', true);
           $itemBtn.closest('tr').addClass('table-success').css('transition', 'all 0.5s ease');
