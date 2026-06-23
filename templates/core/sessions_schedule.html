@@ -100,20 +100,20 @@
       <div class="row g-3 align-items-end">
         
         <!-- Week Navigation -->
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label fw-bold">
             <i class="bi bi-calendar-week"></i> Navigation
           </label>
           <div class="btn-group w-100">
-            <a href="?week={{ prev_week|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+            <a href="?week={{ prev_week|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if exceptions_only %}&exceptions_only=on{% endif %}" 
                class="btn btn-outline-secondary">
               <i class="bi bi-chevron-left"></i>
             </a>
-            <a href="?week={{ today|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+            <a href="?week={{ today|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if exceptions_only %}&exceptions_only=on{% endif %}" 
                class="btn btn-outline-secondary flex-grow-1">
               <i class="bi bi-calendar-check"></i> Cette semaine
             </a>
-            <a href="?week={{ next_week|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+            <a href="?week={{ next_week|date:'Y-m-d' }}{% if view_mode != 'room' %}&view={{ view_mode }}{% endif %}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if exceptions_only %}&exceptions_only=on{% endif %}" 
                class="btn btn-outline-secondary">
               <i class="bi bi-chevron-right"></i>
             </a>
@@ -126,11 +126,11 @@
             <i class="bi bi-eye"></i> Vue
           </label>
           <div class="btn-group w-100" role="group">
-            <a href="?week={{ week_start|date:'Y-m-d' }}&view=room{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+            <a href="?week={{ week_start|date:'Y-m-d' }}&view=room{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if exceptions_only %}&exceptions_only=on{% endif %}" 
                class="btn btn-sm {% if view_mode == 'room' %}btn-primary{% else %}btn-outline-primary{% endif %}">
               <i class="bi bi-door-open"></i> Salles
             </a>
-            <a href="?week={{ week_start|date:'Y-m-d' }}&view=teacher{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+            <a href="?week={{ week_start|date:'Y-m-d' }}&view=teacher{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if exceptions_only %}&exceptions_only=on{% endif %}" 
                class="btn btn-sm {% if view_mode == 'teacher' %}btn-primary{% else %}btn-outline-primary{% endif %}">
               <i class="bi bi-person"></i> Profs
             </a>
@@ -168,7 +168,7 @@
         </div>
 
         <!-- Status Filter -->
-        <div class="col-md-2">
+        <div class="col-md-1.5 col-md">
           <label class="form-label fw-bold">
             <i class="bi bi-flag"></i> Statut
           </label>
@@ -178,6 +178,16 @@
             <option value="DONE" {% if status_filter == 'DONE' %}selected{% endif %}>Terminée</option>
             <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>Annulée</option>
           </select>
+        </div>
+
+        <!-- Exceptions Filter -->
+        <div class="col-md-1.5 col-md d-flex align-items-center pb-1">
+          <div class="form-check form-switch w-100">
+            <input class="form-check-input" type="checkbox" role="switch" id="exceptionsFilter" name="exceptions_only" {% if exceptions_only %}checked{% endif %} onchange="toggleExceptionsFilter(this)">
+            <label class="form-check-label fw-bold small text-nowrap" for="exceptionsFilter">
+              <i class="bi bi-exclamation-circle text-warning"></i> Exceptions
+            </label>
+          </div>
         </div>
 
       </div>
@@ -203,6 +213,12 @@
               <span class="badge bg-light text-dark border">
                 Statut: {{ status_filter }}
                 <a href="?week={{ week_start|date:'Y-m-d' }}&view={{ view_mode }}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}" class="text-dark ms-1">×</a>
+              </span>
+            {% endif %}
+            {% if exceptions_only %}
+              <span class="badge bg-light text-dark border">
+                Exceptions uniquement
+                <a href="?week={{ week_start|date:'Y-m-d' }}&view={{ view_mode }}{% if room_filter %}&room_id={{ room_filter }}{% endif %}{% if teacher_filter %}&teacher_id={{ teacher_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="text-dark ms-1">×</a>
               </span>
             {% endif %}
             <a href="?week={{ week_start|date:'Y-m-d' }}&view={{ view_mode }}" class="btn btn-sm btn-outline-secondary ms-auto">
@@ -307,6 +323,26 @@
                         <div class="session-students">
                           <i class="bi bi-people"></i> {{ session.group.students.count }} élèves
                         </div>
+                        {% if session.is_exceptional %}
+                          <div class="session-exception-badge text-warning fw-semibold mt-1" style="font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">
+                            <i class="bi bi-info-circle-fill"></i>
+                            {% with exc_type=session.get_exception_type %}
+                              {% if exc_type == 'CANCELLED' %}
+                                Annulée
+                              {% elif exc_type == 'SUBSTITUTE' %}
+                                Remplaçant
+                              {% elif exc_type == 'ROOM' %}
+                                Salle modifiée
+                              {% elif exc_type == 'TIME' %}
+                                Horaire modifié
+                              {% elif exc_type == 'DATE' %}
+                                Hors-planning
+                              {% else %}
+                                Modifiée
+                              {% endif %}
+                            {% endwith %}
+                          </div>
+                        {% endif %}
                       </div>
                     {% endfor %}
                   {% else %}
@@ -560,6 +596,11 @@ function showSessionDetail(sessionId) {
                   <i class="bi bi-save-fill"></i> Enregistrer
                 </button>
                 <div class="d-flex gap-2">
+                  ${data.is_exceptional ? `
+                    <button type="button" class="btn btn-outline-warning btn-sm px-3" onclick="resetSessionToDefault(${data.id})">
+                      <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser par défaut
+                    </button>
+                  ` : ''}
                   ${data.status === 'CANCELLED' ? `
                     <button type="button" class="btn btn-success btn-sm px-3" onclick="updateSessionStatus(${data.id}, 'PLANNED')">
                       <i class="bi bi-arrow-counterclockwise"></i> Restaurer
@@ -1008,6 +1049,45 @@ function showToast(title, message, type = 'success') {
   setTimeout(() => { $(toast).fadeOut(200); }, 3500);
 }
 
+function toggleExceptionsFilter(checkbox) {
+  const params = new URLSearchParams(window.location.search);
+  if (checkbox.checked) {
+    params.set('exceptions_only', 'on');
+  } else {
+    params.delete('exceptions_only');
+  }
+  window.location.search = params.toString();
+}
+
+function resetSessionToDefault(sessionId) {
+  if (!confirm("Confirmer la réinitialisation de cette séance ? Elle reprendra ses horaires et sa salle par défaut.")) {
+    return;
+  }
+  
+  const csrfToken = getCookie('csrftoken');
+  
+  fetch(`/sessions/${sessionId}/reset-ajax/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('sessionDetailModal')).hide();
+      showToast('Succès', data.message, 'success');
+      setTimeout(() => { location.reload(); }, 800);
+    } else {
+      alert('Erreur: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Erreur lors de la réinitialisation de la séance.');
+  });
+}
 function closeToast() {
   $('#appToast').fadeOut(200);
 }

@@ -599,100 +599,57 @@ class Session(models.Model):
         end = datetime.combine(datetime.today(), self.end_time)
         return (end - start).total_seconds() / 3600
 
-
-class SessionException(models.Model):
-    """Per-date exception / override for a CourseGroup's regular session.
-
-    Use this to cancel a particular occurrence or to move it to another time/room.
-    """
-    course_group = models.ForeignKey(CourseGroup, on_delete=models.CASCADE, related_name='exceptions')
-    date = models.DateField()
-
-    # If True, this occurrence is cancelled (no session will be generated)
-    cancelled = models.BooleanField(default=False)
-
-    # Optional overrides — if provided they replace the group's default for that date
-    override_room = models.ForeignKey(Room, null=True, blank=True, on_delete=models.PROTECT)
-    override_start_time = models.TimeField(null=True, blank=True)
-    override_end_time = models.TimeField(null=True, blank=True)
-
-    notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = [['course_group', 'date']]
-        verbose_name = 'Exception de session'
-        verbose_name_plural = 'Exceptions de sessions'
-        ordering = ['-date']
-
-    def __str__(self):
-        flag = 'CANCELLED' if self.cancelled else 'OVERRIDE' if (self.override_start_time or self.override_end_time or self.override_room) else 'NOTE'
-        return f"{self.course_group.name} - {self.date} ({flag})"
-
-    def clean(self):
+    def get_default_schedule(self):
         """
-        Validate SessionException overrides:
-        - If override times are provided, both start and end must be present and end > start.
-        - A cancelled exception should not include overrides.
-        - Optionally pre-check for simple room/teacher conflicts on the target date when an override time/room is provided.
+        Get the regular CourseGroupSchedule matching this session's weekday.
         """
-        errors = []
+        if not self.group:
+            return None
+        DAY_MAP_REV = {0: 'MON', 1: 'TUE', 2: 'WED', 3: 'THU', 4: 'FRI', 5: 'SAT', 6: 'SUN'}
+        weekday = DAY_MAP_REV[self.date.weekday()]
+        return self.group.schedules.filter(day=weekday).first()
 
-        # Validate override times presence/ordering
-        if (self.override_start_time and not self.override_end_time) or (self.override_end_time and not self.override_start_time):
-            errors.append('Les heures de début et de fin doivent être fournies ensemble pour une modification (override).')
+    def get_exception_type(self):
+        """
+        Compare the session's details to the default CourseGroupSchedule.
+        Returns:
+            - 'CANCELLED' if cancelled.
+            - 'SUBSTITUTE' if a substitute teacher is assigned.
+            - 'DATE' if there is no normal schedule on this weekday.
+            - 'ROOM' if room differs.
+            - 'TIME' if start or end times differ.
+            - None if it matches the default schedule exactly.
+        """
+        if self.status == 'CANCELLED':
+            return 'CANCELLED'
+        if self.substitute_teacher_id:
+            return 'SUBSTITUTE'
+        
+        default_sch = self.get_default_schedule()
+        if not default_sch:
+            return 'DATE'
+            
+        if self.room_id != default_sch.room_id:
+            return 'ROOM'
+            
+        # Standardize times comparison
+        t_start = self.start_time.replace(second=0, microsecond=0)
+        t_end = self.end_time.replace(second=0, microsecond=0)
+        d_start = default_sch.start_time.replace(second=0, microsecond=0)
+        d_end = default_sch.end_time.replace(second=0, microsecond=0)
+        
+        if t_start != d_start or t_end != d_end:
+            return 'TIME'
+            
+        return None
 
-        if self.override_start_time and self.override_end_time:
-            if self.override_end_time <= self.override_start_time:
-                errors.append('L\'heure de fin doit être postérieure à l\'heure de début pour l\'override.')
+    @property
+    def is_exceptional(self):
+        """
+        Returns True if this session has any deviation from its default schedule.
+        """
+        return self.get_exception_type() is not None
 
-        # Cancelled exceptions should not carry overrides
-        if self.cancelled and (self.override_room or self.override_start_time or self.override_end_time):
-            errors.append('Une exception annulée ne doit pas contenir d\'overrides (salle/horaires).')
-
-        # Pre-check simple conflicts only when overrides specify a concrete time window
-        if not self.cancelled and self.override_start_time and self.override_end_time:
-            # Room conflicts
-            target_room = self.override_room
-            if target_room:
-                room_qs = Session.objects.filter(date=self.date, room=target_room).exclude(status='CANCELLED')
-                # Exclude sessions belonging to the same course_group (they are the ones we are overriding)
-                room_qs = room_qs.exclude(group=self.course_group)
-                for s in room_qs:
-                    if (self.override_start_time < s.end_time and self.override_end_time > s.start_time):
-                        errors.append(
-                            f"Conflit de salle avec le groupe '{s.group.name}' ({s.start_time.strftime('%H:%M')}-{s.end_time.strftime('%H:%M')})."
-                        )
-                        break
-
-            # Teacher conflicts
-            teacher = None
-            try:
-                teacher = self.course_group.teacher
-            except Exception:
-                teacher = None
-
-            if teacher:
-                teach_qs = Session.objects.filter(date=self.date, group__teacher=teacher).exclude(status='CANCELLED')
-                teach_qs = teach_qs.exclude(group=self.course_group)
-                for s in teach_qs:
-                    if (self.override_start_time < s.end_time and self.override_end_time > s.start_time):
-                        errors.append(
-                            f"Conflit de professeur avec le groupe '{s.group.name}' ({s.start_time.strftime('%H:%M')}-{s.end_time.strftime('%H:%M')})."
-                        )
-                        break
-
-        if errors:
-            raise ValidationError(errors)
-
-    def effective_room(self, schedule_room):
-        return self.override_room or schedule_room
-
-    def effective_start(self, schedule_start):
-        return self.override_start_time or schedule_start
-
-    def effective_end(self, schedule_end):
-        return self.override_end_time or schedule_end
 
 
 # ==================== SIGNALS ====================
@@ -749,38 +706,6 @@ def sync_course_group_schedule_on_delete(sender, instance, **kwargs):
     # Bust sidebar conflict badge cache
     cache.delete('sidebar_conflict_count')
 
-
-@receiver(post_delete, sender=Session)
-def session_deleted_signal(sender, instance, **kwargs):
-    """Creates a cancelled SessionException when a future planned session is deleted,
-    so that subsequent session generations do not recreate it.
-    """
-    if instance.status == 'PLANNED' and instance.date >= timezone.now().date():
-        SessionException.objects.get_or_create(
-            course_group=instance.group,
-            date=instance.date,
-            defaults={'cancelled': True}
-        )
-
-
-@receiver(post_save, sender=SessionException)
-def sync_session_exception_on_save(sender, instance, **kwargs):
-    """Automatically syncs future sessions when a SessionException is created or modified"""
-    from .utils import generate_sessions_from_coursegroups
-    from datetime import timedelta
-    start = instance.date - timedelta(days=1)
-    end = instance.date + timedelta(days=1)
-    generate_sessions_from_coursegroups(start, end, force=True, course=instance.course_group)
-
-
-@receiver(post_delete, sender=SessionException)
-def sync_session_exception_on_delete(sender, instance, **kwargs):
-    """Automatically syncs future sessions when a SessionException is deleted"""
-    from .utils import generate_sessions_from_coursegroups
-    from datetime import timedelta
-    start = instance.date - timedelta(days=1)
-    end = instance.date + timedelta(days=1)
-    generate_sessions_from_coursegroups(start, end, force=True, course=instance.course_group)
 
 
 # ==============================================================================

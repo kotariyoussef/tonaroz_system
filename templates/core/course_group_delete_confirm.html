@@ -62,7 +62,6 @@
         <li><strong>{{ enrollment_count }} inscription{{ enrollment_count|pluralize }}</strong> d'élèves à ce cours</li>
         <li><strong>{{ session_count }} session{{ session_count|pluralize }}</strong> de cours (passées, présentes et futures)</li>
         <li><strong>{{ attendance_count }} enregistrement{{ attendance_count|pluralize }}</strong> de présence</li>
-        <li>Toutes les exceptions de session associées</li>
       </ul>
     </div>
 
@@ -74,7 +73,7 @@
           <strong>Attention :</strong> Cette action supprimera définitivement <strong>{{ course.name }}</strong> et toutes ses données associées.
         </p>
         <div class="d-flex gap-3">
-          <form method="post" action="{% url 'core:course_group_delete' course.id %}" class="d-inline">
+          <form method="post" action="{% url 'core:course_group_delete_confirm' course.id %}" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">
               <i class="bi bi-trash-fill"></i> Oui, supprimer définitivement

@@ -12,7 +12,7 @@ from django.db.models import Sum
 from dateutil.relativedelta import relativedelta
 
 # Importer les modèles
-from .models import SessionException, Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, Level
+from .models import Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, Level
 
 
 # ==================== DONNÉES DE BASE ====================

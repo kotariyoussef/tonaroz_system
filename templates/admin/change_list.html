@@ -107,23 +107,6 @@
 </div>
 {% endif %}
 
-{% if model_name == 'sessionexception' %}
-<div class="school-list-summary">
-    <div class="school-list-stat" style="--c:#ef4444;">
-        <span class="material-symbols-outlined">event_busy</span>
-        <div>
-            <div class="school-list-stat-value">{{ cl.queryset.count }}</div>
-            <div class="school-list-stat-label">Exceptions de session</div>
-        </div>
-    </div>
-    <div style="flex:1;"></div>
-    <a href="{% url 'admin:core_sessionexception_add' %}" class="school-btn-primary">
-        <span class="material-symbols-outlined">add</span>
-        Ajouter exception
-    </a>
-</div>
-{% endif %}
-
 {% if model_name == 'room' %}
 <div class="school-list-summary">
     <div class="school-list-stat" style="--c:#ef4444;">

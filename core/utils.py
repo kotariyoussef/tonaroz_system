@@ -1,7 +1,7 @@
 """
 Utilitaires pour le système de gestion d'école
 """
-from .models import Session, CourseGroup, SessionException  # Import necessary models
+from .models import Session, CourseGroup  # Import necessary models
 from django.db.models import Sum
 from django.utils import timezone
 from django.conf import settings
@@ -723,7 +723,7 @@ def generate_sessions_from_coursegroups(start_date: date, end_date: date, force:
 
     Returns a summary dict: {'created', 'updated', 'deleted', 'skipped', 'errors'}
     """
-    from .models import CourseGroup, Session, SessionException, CourseGroupSchedule
+    from .models import CourseGroup, Session, CourseGroupSchedule
     from datetime import timedelta
     from django.core.exceptions import ValidationError
 
@@ -804,35 +804,10 @@ def generate_sessions_from_coursegroups(start_date: date, end_date: date, force:
             current = start_date + timedelta(days=days_ahead)
 
             while current <= end_date:
-                try:
-                    exception = SessionException.objects.filter(course_group=active_course, date=current).first()
-                except Exception:
-                    exception = None
-
-                # cancelled exception -> delete existing session if present
-                if exception and exception.cancelled:
-                    existing = Session.objects.filter(group=active_course, date=current, schedule=sch).first()
-                    if not existing:
-                        existing = Session.objects.filter(group=active_course, date=current, start_time=sch.start_time, end_time=sch.end_time).first()
-                    
-                    if existing:
-                        if existing.is_manually_edited or existing.status in ['DONE', 'CANCELLED']:
-                            summary['skipped'] += 1
-                        else:
-                            try:
-                                existing.delete()
-                                summary['deleted'] += 1
-                            except Exception as e:
-                                summary['errors'].append(str(e))
-                    else:
-                        summary['skipped'] += 1
-                    current += timedelta(days=7)
-                    continue
-
                 # determine effective values
-                eff_room = exception.effective_room(sch.room) if exception else sch.room
-                eff_start = exception.effective_start(sch.start_time) if exception else sch.start_time
-                eff_end = exception.effective_end(sch.end_time) if exception else sch.end_time
+                eff_room = sch.room
+                eff_start = sch.start_time
+                eff_end = sch.end_time
 
                 existing = Session.objects.filter(group=active_course, date=current, schedule=sch).first()
                 if not existing:

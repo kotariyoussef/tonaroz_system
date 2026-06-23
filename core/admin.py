@@ -12,7 +12,7 @@ from import_export.widgets import ForeignKeyWidget
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ExportForm, ImportForm
 
-from .models import Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, SessionException, CourseGroupSchedule, Level, WhatsAppSendLog
+from .models import Room, Teacher, CourseGroup, Student, Enrollment, Payment, Attendance, Session, CourseGroupSchedule, Level, WhatsAppSendLog
 from django.core.exceptions import ValidationError
 
 
@@ -422,51 +422,6 @@ class PaymentAdmin(ModelAdmin, ImportExportModelAdmin):
         if obj.is_locked:
             return mark_safe('<span style="color: red; font-size: 16px;">🔒 Verrouillé</span>')
         return mark_safe('<span style="color: green;">🔓 Modifiable</span>')
-
-
-@admin.register(SessionException)
-class SessionExceptionAdmin(ModelAdmin):
-    list_display = ('course_group', 'date', 'cancelled', 'override_room', 'override_start_time', 'override_end_time')
-    list_filter = ('cancelled', 'course_group__teacher', 'course_group__schedules__room')
-    search_fields = ('course_group__name',)
-    autocomplete_fields = ('course_group', 'override_room')
-    
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        # Regenerate sessions affected by this exception
-        from .utils import generate_sessions_from_coursegroups
-        from datetime import timedelta
-        start = obj.date - timedelta(days=1)
-        end = obj.date + timedelta(days=1)
-        generate_sessions_from_coursegroups(start, end, force=True, course=obj.course_group)
-        messages.success(request, f"✅ Exception de session enregistrée et sessions synchronisées pour le {obj.date}.")
-
-    def delete_model(self, request, obj):
-        course_group = obj.course_group
-        date_val = obj.date
-        super().delete_model(request, obj)
-        # Regenerate sessions affected by this exception deletion
-        from .utils import generate_sessions_from_coursegroups
-        from datetime import timedelta
-        start = date_val - timedelta(days=1)
-        end = date_val + timedelta(days=1)
-        generate_sessions_from_coursegroups(start, end, force=True, course=course_group)
-
-    def delete_queryset(self, request, queryset):
-        # Collect affected course groups and dates before deletion
-        affected_items = list(queryset.values('course_group', 'date'))
-        super().delete_queryset(request, queryset)
-        # Regenerate sessions for each affected item
-        from .utils import generate_sessions_from_coursegroups
-        from datetime import timedelta
-        for item in affected_items:
-            try:
-                cg = CourseGroup.objects.get(pk=item['course_group'])
-                start = item['date'] - timedelta(days=1)
-                end = item['date'] + timedelta(days=1)
-                generate_sessions_from_coursegroups(start, end, force=True, course=cg)
-            except CourseGroup.DoesNotExist:
-                pass
 
 
 @admin.register(Attendance)

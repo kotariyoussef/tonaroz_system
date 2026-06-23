@@ -47,11 +47,12 @@ urlpatterns = [
     path('sessions/<int:session_id>/edit/', views.session_edit, name='session_edit'),
     path('sessions/<int:session_id>/delete/', views.session_delete, name='session_delete'),
     path('sessions/generate/', views.session_generate_bulk, name='session_generate_bulk'),
-    path('sessions/exceptions/', views.session_exceptions_list, name='session_exceptions_list'),
     path('sessions/<int:session_id>/quick-update/', views.session_quick_status_update, name='session_quick_status_update'),
     path('sessions/<int:session_id>/detail-ajax/', views.session_detail_ajax, name='session_detail_ajax'),
     path('sessions/create-ajax/', views.session_create_ajax, name='session_create_ajax'),
     path('sessions/<int:session_id>/update-ajax/', views.session_update_ajax, name='session_update_ajax'),
+    path('sessions/<int:session_id>/reset-ajax/', views.session_reset_to_default_ajax, name='session_reset_to_default_ajax'),
+    path('sessions/exceptions/', views.session_exceptions_list, name='session_exceptions_list'),
     
     # Cashier
     path('cashier/payment/create/', views.payment_create, name='payment_create'),

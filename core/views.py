@@ -12,7 +12,7 @@ from .models import Student, Payment, Enrollment, Room, Teacher, WhatsAppSendLog
 from .utils import WhatsAppMessageTemplates, WhatsAppUtils, WhatsAppServiceAPI, _build_room_schedule, _build_teacher_schedule, _calculate_week_stats, get_dashboard_stats, generate_receipt_pdf, calculate_student_monthly_total, generate_sessions_from_coursegroups, _annotate_conflicts
 from .forms import SessionForm, StudentForm, EnrollmentForm
 from django.core.paginator import Paginator
-from .models import CourseGroup, Session, Attendance, SessionException
+from .models import CourseGroup, Session, Attendance
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from decimal import Decimal as D
@@ -825,6 +825,7 @@ def sessions_schedule(request):
     room_filter = request.GET.get('room_id')
     teacher_filter = request.GET.get('teacher_id')
     status_filter = request.GET.get('status')
+    exceptions_only = request.GET.get('exceptions_only') == 'on'
     
     # Build list of dates for the week
     dates = [week_start + timedelta(days=i) for i in range(7)]
@@ -854,6 +855,8 @@ def sessions_schedule(request):
     
     # Annotate and load sessions in-memory
     annotated_sessions = _annotate_conflicts(base_sessions)
+    if exceptions_only:
+        annotated_sessions = [s for s in annotated_sessions if s.is_exceptional]
     
     # Build schedule grid based on view mode
     if view_mode == 'teacher':
@@ -879,7 +882,7 @@ def sessions_schedule(request):
     stats = _calculate_week_stats(annotated_sessions, dates)
     
     # Check if filters are active
-    filters_active = any([room_filter, teacher_filter, status_filter])
+    filters_active = any([room_filter, teacher_filter, status_filter, exceptions_only])
     
     context = {
         'week_start': week_start,
@@ -899,6 +902,7 @@ def sessions_schedule(request):
         'room_filter': room_filter,
         'teacher_filter': teacher_filter,
         'status_filter': status_filter,
+        'exceptions_only': exceptions_only,
         'courses': CourseGroup.objects.filter(is_active=True).order_by('name'),
     }
     
@@ -1012,6 +1016,13 @@ def session_detail_ajax(request, session_id):
         'notes': session.notes,
         'is_past': is_past,
         'is_future': is_future,
+        'is_exceptional': session.is_exceptional,
+        'exception_type': session.get_exception_type(),
+        'default_schedule': {
+            'start_time': session.get_default_schedule().start_time.strftime('%H:%M') if session.get_default_schedule() else None,
+            'end_time': session.get_default_schedule().end_time.strftime('%H:%M') if session.get_default_schedule() else None,
+            'room_name': session.get_default_schedule().room.name if session.get_default_schedule() else None,
+        } if session.get_default_schedule() else None,
     }
     
     return JsonResponse(data)
@@ -1192,94 +1203,6 @@ def session_generate_bulk(request):
     return render(request, 'core/session_generate.html', {
         'summary': summary,
         'errors': errors,
-    })
-
-
-@require_http_methods(['GET', 'POST'])
-def session_exceptions_list(request):
-    """List and manage session exceptions."""
-    from .models import Room
-    
-    exceptions = SessionException.objects.select_related('course_group', 'override_room').prefetch_related('course_group__schedules__room').order_by('-date')
-    
-    # Filter by course_group if provided
-    group_id = request.GET.get('group_id')
-    if group_id:
-        exceptions = exceptions.filter(course_group_id=group_id)
-    
-    # Form submission: create/edit exception
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        group_id = int(request.POST.get('group_id'))
-        date_str = request.POST.get('date')
-        from datetime import datetime as dt
-        try:
-            date_obj = dt.strptime(date_str, '%Y-%m-%d').date()
-        except Exception:
-            return HttpResponseBadRequest('Invalid date')
-        
-        group = get_object_or_404(CourseGroup, pk=group_id)
-        
-        if action == 'override':
-            override_room_id = request.POST.get('override_room_id')
-            override_start = request.POST.get('override_start_time')
-            override_end = request.POST.get('override_end_time')
-            new_date_str = request.POST.get('new_date') or None
-            from datetime import time as dttime
-            # Parse new date if provided
-            if new_date_str:
-                try:
-                    new_date = dt.strptime(new_date_str, '%Y-%m-%d').date()
-                except Exception:
-                    return HttpResponseBadRequest('Invalid new date')
-            else:
-                new_date = date_obj
-
-            # Parse times
-            try:
-                override_start_time = dttime.fromisoformat(override_start) if override_start else None
-                to_time = dttime.fromisoformat(override_end) if override_end else None
-            except Exception:
-                return HttpResponseBadRequest('Invalid time format, use HH:MM')
-
-            # If user moved the exception to a new date, create/update for the new date and remove the old one
-            from django.core.exceptions import ValidationError
-            try:
-                # Create/update the exception at target date
-                exc, created = SessionException.objects.update_or_create(
-                    course_group=group,
-                    date=new_date,
-                    defaults={
-                        'cancelled': False,
-                        'override_room_id': override_room_id or None,
-                        'override_start_time': override_start_time,
-                        'override_end_time': to_time,
-                    }
-                )
-                # If original date differs, delete the old exception one-by-one to trigger delete signals
-                if new_date != date_obj:
-                    old_excs = SessionException.objects.filter(course_group=group, date=date_obj).exclude(pk=exc.pk)
-                    for old_exc in old_excs:
-                        old_exc.delete()
-            except ValidationError as ve:
-                return HttpResponseBadRequest('; '.join(ve.messages))
-            except Exception as e:
-                return HttpResponseBadRequest(str(e))
-        elif action == 'delete':
-            # Delete one-by-one to trigger delete signals
-            for exc in SessionException.objects.filter(course_group=group, date=date_obj):
-                exc.delete()
-        
-        return render(request, 'core/session_exceptions_saved.html', {'group': group, 'date': date_obj})
-    
-    courses = CourseGroup.objects.filter(is_active=True).prefetch_related('schedules__room').order_by('name')
-    rooms = Room.objects.all()
-    
-    return render(request, 'core/session_exceptions_list.html', {
-        'exceptions': exceptions,
-        'courses': courses,
-        'rooms': rooms,
-        'selected_group_id': group_id,
     })
 
 
@@ -2333,3 +2256,85 @@ def level_delete(request, level_id):
     except ProtectedError:
         messages.error(request, "Impossible de supprimer ce niveau car il est utilisé par des groupes de cours.")
     return redirect('core:levels_list')
+
+
+def session_exceptions_list(request):
+    """List all auto-detected exceptional/modified sessions."""
+    today = timezone.now().date()
+    
+    # Query exceptional sessions (cancelled, manual edit, or substitute teacher)
+    sessions = Session.objects.filter(
+        Q(status='CANCELLED') | 
+        Q(substitute_teacher__isnull=False) | 
+        Q(is_manually_edited=True)
+    ).select_related(
+        'group', 
+        'room', 
+        'substitute_teacher', 
+        'group__teacher',
+        'group__level'
+    )
+    
+    # Filter by group_id if provided
+    group_id = request.GET.get('group_id')
+    if group_id:
+        sessions = sessions.filter(group_id=group_id)
+        
+    # Order by date
+    sessions = sessions.order_by('-date', 'start_time')
+    
+    # Load course groups for filter select
+    courses = CourseGroup.objects.filter(is_active=True).prefetch_related('schedules__room').order_by('name')
+    rooms = Room.objects.all()
+    
+    # Build list containing true exceptional state (in case default schedule was deleted)
+    filtered_sessions = []
+    for s in sessions:
+        if s.is_exceptional:
+            filtered_sessions.append(s)
+            
+    context = {
+        'exceptions': filtered_sessions,
+        'courses': courses,
+        'rooms': rooms,
+        'selected_group_id': group_id,
+    }
+    return render(request, 'core/session_exceptions_list.html', context)
+
+
+@require_POST
+def session_reset_to_default_ajax(request, session_id):
+    """
+    Reset an exceptional session back to its group's default schedule.
+    """
+    from django.core.exceptions import ValidationError
+    
+    session = get_object_or_404(Session, id=session_id)
+    default_sch = session.get_default_schedule()
+    
+    if not default_sch:
+        return JsonResponse({
+            'success': False, 
+            'error': "Ce groupe n'a pas d'horaire par défaut configuré pour ce jour de la semaine."
+        }, status=400)
+        
+    try:
+        session.start_time = default_sch.start_time
+        session.end_time = default_sch.end_time
+        session.room = default_sch.room
+        session.substitute_teacher = None
+        session.status = 'PLANNED'
+        session.is_manually_edited = False
+        
+        session.full_clean()
+        session.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': "La séance a été réinitialisée aux horaires et salle par défaut."
+        })
+    except ValidationError as ve:
+        error_msg = "; ".join(ve.messages) if hasattr(ve, 'messages') else str(ve)
+        return JsonResponse({'success': False, 'error': error_msg}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
